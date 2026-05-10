@@ -1,6 +1,9 @@
 package proxy
 
 import (
+	"github.com/notes-in-the-cloud/notes-cloud-api-gateway/internal/middlewares"
+	"github.com/notes-in-the-cloud/notes-cloud-api-gateway/internal/notifications"
+	"github.com/notes-in-the-cloud/notes-cloud-api-gateway/internal/websocket"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -12,13 +15,42 @@ type jwtValidator interface {
 	ValidateAccessToken(rawToken string) (*accesstoken.Claims, error)
 }
 
-func NewRouter(p *proxy, jwtValidator jwtValidator) *mux.Router {
+func NewRouter(
+	p *proxy,
+	jwtValidator jwtValidator,
+	internalToken string,
+	allowedOrigins []string,
+) *mux.Router {
 	r := mux.NewRouter()
+
 	authMiddleware := accesstoken.AuthMiddleware(jwtValidator)
+	wsAuthMiddleware := middlewares.AuthMiddlewareWithQueryToken(jwtValidator)
+
+	wsHub := websocket.NewHub()
+	wsHandler := websocket.NewHandler(wsHub, allowedOrigins)
+	notificationsHandler := notifications.NewHandler(wsHub)
 
 	// Health check endpoints
 	r.HandleFunc("/api/healthz", probes.Healthz).Methods(http.MethodGet)
 	r.HandleFunc("/api/readyz", probes.Readyz).Methods(http.MethodGet)
+
+	// WebSocket endpoint.
+	//
+	// Browser WebSocket API cannot easily send Authorization headers,
+	// so /ws supports ?token=<access_token>.
+	wsRouter := r.NewRoute().Subrouter()
+	wsRouter.Use(wsAuthMiddleware)
+	wsRouter.HandleFunc("/ws", wsHandler.Connect).Methods(http.MethodGet)
+
+	// Internal service-to-service endpoints.
+	//
+	// This must not be public. It is called by reminder-service.
+	internal := r.PathPrefix("/internal").Subrouter()
+	internal.Use(middlewares.InternalToken(internalToken))
+	internal.HandleFunc(
+		"/notifications/{userId}",
+		notificationsHandler.Push,
+	).Methods(http.MethodPost)
 
 	api := r.PathPrefix("/api/v1").Subrouter()
 
@@ -41,29 +73,22 @@ func NewRouter(p *proxy, jwtValidator jwtValidator) *mux.Router {
 	protected := api.PathPrefix("").Subrouter()
 	protected.Use(authMiddleware)
 
-	// User (auth service)
 	protected.HandleFunc("/me", p.Auth).Methods(http.MethodGet)
 
-	// Notes
 	protected.HandleFunc("/notes", p.Notes).Methods(http.MethodGet, http.MethodPost)
 	protected.HandleFunc("/notes/{note_id}", p.Notes).Methods(http.MethodGet, http.MethodPut, http.MethodDelete)
 
-	// Sharing (create share link)
 	protected.HandleFunc("/notes/{note_id}/share-links", p.Sharing).Methods(http.MethodPost)
 
-	// Todos
 	protected.HandleFunc("/todos", p.Todo).Methods(http.MethodGet, http.MethodPost)
 	protected.HandleFunc("/todos/{todo_id}", p.Todo).Methods(http.MethodGet, http.MethodPut, http.MethodDelete)
 
-	// Todo lists
 	protected.HandleFunc("/todo-lists", p.Todo).Methods(http.MethodGet, http.MethodPost)
 	protected.HandleFunc("/todo-lists/{list_id}", p.Todo).Methods(http.MethodGet, http.MethodPut, http.MethodDelete)
 
-	// Reminders
 	protected.HandleFunc("/reminders", p.Reminder).Methods(http.MethodGet, http.MethodPost, http.MethodPut)
 	protected.HandleFunc("/reminders/{reminder_id}", p.Reminder).Methods(http.MethodGet, http.MethodDelete)
 
-	// Notifications
 	protected.HandleFunc("/notifications", p.Reminder).Methods(http.MethodGet, http.MethodDelete)
 	protected.HandleFunc("/notifications/unread-count", p.Reminder).Methods(http.MethodGet)
 	protected.HandleFunc("/notifications/read-all", p.Reminder).Methods(http.MethodPost)
