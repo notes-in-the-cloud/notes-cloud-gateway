@@ -8,3 +8,8 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/notes-in-the-cloud/notes-cloud-jwt-utils v0.0.0-20260510171725-265efd891cbb
 )
+
+require (
+	github.com/felixge/httpsnoop v1.0.3 // indirect
+	github.com/gorilla/handlers v1.5.2 // indirect
+)

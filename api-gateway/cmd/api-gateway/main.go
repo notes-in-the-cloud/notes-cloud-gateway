@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/notes-in-the-cloud/notes-cloud-api-gateway/internal/middlewares"
 	"log"
 	"net/http"
 	"os"
@@ -48,9 +49,12 @@ func main() {
 		allowedOrigins,
 	)
 
+	routerWithCORS := middlewares.CORS(router, allowedOrigins)
+
 	addr := ":" + getEnv("SERVER_PORT", "8090")
 	log.Printf("API Gateway starting on %s", addr)
-	if err := http.ListenAndServe(addr, router); err != nil {
+
+	if err := http.ListenAndServe(addr, routerWithCORS); err != nil {
 		log.Fatalf("server failed: %v", err)
 	}
 }
