@@ -2,11 +2,12 @@ package proxy
 
 import (
 	"encoding/json"
-	"github.com/notes-in-the-cloud/notes-cloud-jwt-utils/accesstoken"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"strings"
+
+	"github.com/notes-in-the-cloud/notes-cloud-jwt-utils/accesstoken"
 )
 
 const (
@@ -209,6 +210,33 @@ func rewriteAuthPath(originalPath string) string {
 		return authInternalMePath
 	}
 
+	if strings.HasPrefix(originalPath, "/api/v1/auth/google") {
+		return strings.Replace(
+			originalPath,
+			"/api/v1/auth/google",
+			"/authService/api/v1/auth/google",
+			1,
+		)
+	}
+
+	if strings.HasPrefix(originalPath, "/api/v1/auth/gitlab") {
+		return strings.Replace(
+			originalPath,
+			"/api/v1/auth/gitlab",
+			"/authService/api/v1/auth/gitlab",
+			1,
+		)
+	}
+
+	if strings.HasPrefix(originalPath, "/api/v1/auth/email") {
+		return strings.Replace(
+			originalPath,
+			"/api/v1/auth/email",
+			"/authService/api/v1/email",
+			1,
+		)
+	}
+
 	if strings.HasPrefix(originalPath, authPublicPrefix) {
 		return strings.Replace(originalPath, authPublicPrefix, authInternalPrefix, 1)
 	}
@@ -263,11 +291,6 @@ func rewriteReminderPath(originalPath string, userID string) string {
 func rewriteNoteShareLinkPath(originalPath string, userID string) string {
 	escapedUserID := url.PathEscape(userID)
 
-	// Public route:
-	// /api/v1/notes/{noteID}/share-links
-	//
-	// Internal route:
-	// /api/v1/users/{userID}/notes/{noteID}/share-links
 	if strings.HasPrefix(originalPath, notesPublicPrefix) &&
 		strings.HasSuffix(originalPath, noteShareLinksSuffix) {
 		return strings.Replace(
