@@ -12,7 +12,7 @@ type jwtValidator interface {
 	ValidateAccessToken(rawToken string) (*accesstoken.Claims, error)
 }
 
-func NewRouter(p *ServiceProxy, jwtValidator jwtValidator) *mux.Router {
+func NewRouter(p *proxy, jwtValidator jwtValidator) *mux.Router {
 	r := mux.NewRouter()
 	authMiddleware := accesstoken.AuthMiddleware(jwtValidator)
 

@@ -11,10 +11,10 @@ import (
 )
 
 const (
-	publicAPIPrefix = "/api/v1"
+	authInternalUserPathFormat = "/authService/api/v1/users/%s"
+	authPublicPrefix           = "/api/v1/auth"
+	authInternalPrefix         = "/authService/api/v1"
 
-	authPublicPrefix   = "/api/v1/auth"
-	authInternalPrefix = "/authService/api/v1"
 	authPublicMePath   = "/api/v1/me"
 	authInternalMePath = "/authService/api/v1/me"
 
@@ -39,7 +39,7 @@ const (
 	noteShareLinksSuffix = "/share-links"
 )
 
-type ServiceProxy struct {
+type proxy struct {
 	authProxy     *httputil.ReverseProxy
 	notesProxy    *httputil.ReverseProxy
 	todoProxy     *httputil.ReverseProxy
@@ -55,7 +55,7 @@ type ServiceURLs struct {
 	ReminderURL string
 }
 
-func NewServiceProxy(urls ServiceURLs) (*ServiceProxy, error) {
+func NewProxy(urls ServiceURLs) (*proxy, error) {
 	authProxy, err := newProxy(urls.AuthURL)
 	if err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func NewServiceProxy(urls ServiceURLs) (*ServiceProxy, error) {
 		return nil, err
 	}
 
-	return &ServiceProxy{
+	return &proxy{
 		authProxy:     authProxy,
 		notesProxy:    notesProxy,
 		todoProxy:     todoProxy,
@@ -116,12 +116,35 @@ func newProxy(targetURL string) (*httputil.ReverseProxy, error) {
 	return proxy, nil
 }
 
-func (p *ServiceProxy) Auth(w http.ResponseWriter, r *http.Request) {
+func (p *proxy) Auth(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == authPublicMePath {
+		userID, ok := userIDFromRequest(w, r)
+		if !ok {
+			return
+		}
+
+		rewrittenPath := rewriteCurrentUserPath(userID)
+		p.authProxy.ServeHTTP(w, cloneRequestWithPath(r, rewrittenPath))
+
+		return
+	}
+
 	rewrittenPath := rewriteAuthPath(r.URL.Path)
 	p.authProxy.ServeHTTP(w, cloneRequestWithPath(r, rewrittenPath))
 }
 
-func (p *ServiceProxy) Notes(w http.ResponseWriter, r *http.Request) {
+func rewriteCurrentUserPath(userID string) string {
+	escapedUserID := url.PathEscape(userID)
+
+	return strings.Replace(
+		authInternalUserPathFormat,
+		"%s",
+		escapedUserID,
+		1,
+	)
+}
+
+func (p *proxy) Notes(w http.ResponseWriter, r *http.Request) {
 	userID, ok := userIDFromRequest(w, r)
 	if !ok {
 		return
@@ -137,7 +160,7 @@ func (p *ServiceProxy) Notes(w http.ResponseWriter, r *http.Request) {
 	p.notesProxy.ServeHTTP(w, cloneRequestWithPath(r, rewrittenPath))
 }
 
-func (p *ServiceProxy) Todo(w http.ResponseWriter, r *http.Request) {
+func (p *proxy) Todo(w http.ResponseWriter, r *http.Request) {
 	userID, ok := userIDFromRequest(w, r)
 	if !ok {
 		return
@@ -148,7 +171,7 @@ func (p *ServiceProxy) Todo(w http.ResponseWriter, r *http.Request) {
 	p.todoProxy.ServeHTTP(w, cloneRequestWithPath(r, rewrittenPath))
 }
 
-func (p *ServiceProxy) Sharing(w http.ResponseWriter, r *http.Request) {
+func (p *proxy) Sharing(w http.ResponseWriter, r *http.Request) {
 	if strings.HasPrefix(r.URL.Path, shareLinksPublicPrefix) {
 		rewrittenPath := rewritePublicShareLinkPath(r.URL.Path)
 		p.sharingProxy.ServeHTTP(w, cloneRequestWithPath(r, rewrittenPath))
@@ -166,7 +189,7 @@ func (p *ServiceProxy) Sharing(w http.ResponseWriter, r *http.Request) {
 	p.sharingProxy.ServeHTTP(w, cloneRequestWithPath(r, rewrittenPath))
 }
 
-func (p *ServiceProxy) Reminder(w http.ResponseWriter, r *http.Request) {
+func (p *proxy) Reminder(w http.ResponseWriter, r *http.Request) {
 	userID, ok := userIDFromRequest(w, r)
 	if !ok {
 		return
@@ -210,6 +233,14 @@ func rewriteAuthPath(originalPath string) string {
 		return authInternalMePath
 	}
 
+	if originalPath == "/api/v1/auth/verify" {
+		return "/authService/api/v1/email/verify"
+	}
+
+	if originalPath == "/api/v1/auth/resend" {
+		return "/authService/api/v1/email/resend-verification"
+	}
+
 	if strings.HasPrefix(originalPath, "/api/v1/auth/google") {
 		return strings.Replace(
 			originalPath,
@@ -228,17 +259,17 @@ func rewriteAuthPath(originalPath string) string {
 		)
 	}
 
-	if strings.HasPrefix(originalPath, "/api/v1/auth/email") {
-		return strings.Replace(
-			originalPath,
-			"/api/v1/auth/email",
-			"/authService/api/v1/email",
-			1,
-		)
+	if strings.HasPrefix(originalPath, "/api/v1/me") {
+
 	}
 
 	if strings.HasPrefix(originalPath, authPublicPrefix) {
-		return strings.Replace(originalPath, authPublicPrefix, authInternalPrefix, 1)
+		return strings.Replace(
+			originalPath,
+			authPublicPrefix,
+			authInternalPrefix,
+			1,
+		)
 	}
 
 	return originalPath

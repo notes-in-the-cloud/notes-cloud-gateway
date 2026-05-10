@@ -19,7 +19,7 @@ func main() {
 
 	jwtService := accesstoken.NewService(&realTime{}, *jwtCfg, jwt.SigningMethodHS256)
 
-	serviceProxy, err := proxy.NewServiceProxy(proxy.ServiceURLs{
+	serviceProxy, err := proxy.NewProxy(proxy.ServiceURLs{
 		AuthURL:     getEnv("AUTH_SERVICE_URL", "http://localhost:8081"),
 		NotesURL:    getEnv("NOTES_SERVICE_URL", "http://localhost:8082"),
 		TodoURL:     getEnv("TODO_SERVICE_URL", "http://localhost:8085"),
