@@ -1,0 +1,62 @@
+# Binaries
+api-gateway
+gateway
+main
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go build output
+bin/
+dist/
+build/
+out/
+*.test
+*.out
+
+# Go coverage
+coverage.out
+coverage.html
+*.coverprofile
+
+# Go workspace
+go.work
+go.work.sum
+
+# Dependency/vendor folders
+vendor/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Docker / local overrides
+docker-compose.override.yml
+
+# Kubernetes local/generated files
+*.secret.yaml
+*-secret.yaml
+kubeconfig
+.kube/
+
+# IDEs/editors
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# OS files
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+.cache/
