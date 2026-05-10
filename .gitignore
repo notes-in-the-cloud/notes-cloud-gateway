@@ -1,0 +1,20 @@
+# Go build output
+api-gateway
+*.exe
+*.test
+*.out
+
+# Environment files
+.env
+.env.local
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
