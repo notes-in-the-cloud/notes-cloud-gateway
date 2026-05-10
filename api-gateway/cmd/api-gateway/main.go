@@ -19,7 +19,7 @@ func main() {
 		log.Fatalf("failed to load jwt config: %v", err)
 	}
 
-	internalToken := getEnv("INTERNAL_TOKEN", "")
+	internalToken := getEnv("INTERNAL_SERVICE_TOKEN", "")
 	if internalToken == "" {
 		log.Fatal("INTERNAL_TOKEN is required")
 	}
