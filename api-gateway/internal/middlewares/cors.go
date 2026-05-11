@@ -21,6 +21,7 @@ func CORS(next http.Handler, allowedOrigins []string) http.Handler {
 			"Content-Type",
 			InternalTokenHeader,
 		}),
+		handlers.AllowCredentials(), // Allow cookies to be sent
 		handlers.OptionStatusCode(http.StatusNoContent),
 	)(next)
 }

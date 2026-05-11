@@ -55,44 +55,44 @@ func NewRouter(
 	api := r.PathPrefix("/api/v1").Subrouter()
 
 	// ============ Auth endpoints (public) ============
-	api.HandleFunc("/auth/register", p.Auth).Methods(http.MethodPost)
-	api.HandleFunc("/auth/login", p.Auth).Methods(http.MethodPost)
-	api.HandleFunc("/auth/logout", p.Auth).Methods(http.MethodPost)
-	api.HandleFunc("/auth/refresh", p.Auth).Methods(http.MethodPost)
-	api.HandleFunc("/auth/verify", p.Auth).Methods(http.MethodPost)
-	api.HandleFunc("/auth/resend", p.Auth).Methods(http.MethodPost)
-	api.HandleFunc("/auth/google/start", p.Auth).Methods(http.MethodGet)
-	api.HandleFunc("/auth/google/callback", p.Auth).Methods(http.MethodGet)
-	api.HandleFunc("/auth/gitlab/start", p.Auth).Methods(http.MethodGet)
-	api.HandleFunc("/auth/gitlab/callback", p.Auth).Methods(http.MethodGet)
+	api.HandleFunc("/auth/register", p.Auth).Methods(http.MethodPost, http.MethodOptions)
+	api.HandleFunc("/auth/login", p.Auth).Methods(http.MethodPost, http.MethodOptions)
+	api.HandleFunc("/auth/logout", p.Auth).Methods(http.MethodPost, http.MethodOptions)
+	api.HandleFunc("/auth/refresh", p.Auth).Methods(http.MethodPost, http.MethodOptions)
+	api.HandleFunc("/auth/verify", p.Auth).Methods(http.MethodPost, http.MethodOptions)
+	api.HandleFunc("/auth/resend", p.Auth).Methods(http.MethodPost, http.MethodOptions)
+	api.HandleFunc("/auth/google/start", p.Auth).Methods(http.MethodGet, http.MethodOptions)
+	api.HandleFunc("/auth/google/callback", p.Auth).Methods(http.MethodGet, http.MethodOptions)
+	api.HandleFunc("/auth/gitlab/start", p.Auth).Methods(http.MethodGet, http.MethodOptions)
+	api.HandleFunc("/auth/gitlab/callback", p.Auth).Methods(http.MethodGet, http.MethodOptions)
 
 	// ============ Sharing (public) ============
-	api.HandleFunc("/share-links/{token}", p.Sharing).Methods(http.MethodGet)
+	api.HandleFunc("/share-links/{token}", p.Sharing).Methods(http.MethodGet, http.MethodOptions)
 
 	// ============ Protected endpoints ============
 	protected := api.PathPrefix("").Subrouter()
 	protected.Use(authMiddleware)
 
-	protected.HandleFunc("/me", p.Auth).Methods(http.MethodGet)
+	protected.HandleFunc("/me", p.Auth).Methods(http.MethodGet, http.MethodOptions)
 
-	protected.HandleFunc("/notes", p.Notes).Methods(http.MethodGet, http.MethodPost)
-	protected.HandleFunc("/notes/{note_id}", p.Notes).Methods(http.MethodGet, http.MethodPut, http.MethodDelete)
+	protected.HandleFunc("/notes", p.Notes).Methods(http.MethodGet, http.MethodPost, http.MethodOptions)
+	protected.HandleFunc("/notes/{note_id}", p.Notes).Methods(http.MethodGet, http.MethodPut, http.MethodDelete, http.MethodOptions)
 
-	protected.HandleFunc("/notes/{note_id}/share-links", p.Sharing).Methods(http.MethodPost)
+	protected.HandleFunc("/notes/{note_id}/share-links", p.Sharing).Methods(http.MethodPost, http.MethodOptions)
 
-	protected.HandleFunc("/todos", p.Todo).Methods(http.MethodGet, http.MethodPost)
-	protected.HandleFunc("/todos/{todo_id}", p.Todo).Methods(http.MethodGet, http.MethodPut, http.MethodDelete)
+	protected.HandleFunc("/todos", p.Todo).Methods(http.MethodGet, http.MethodPost, http.MethodOptions)
+	protected.HandleFunc("/todos/{todo_id}", p.Todo).Methods(http.MethodGet, http.MethodPut, http.MethodDelete, http.MethodOptions)
 
-	protected.HandleFunc("/todo-lists", p.Todo).Methods(http.MethodGet, http.MethodPost)
-	protected.HandleFunc("/todo-lists/{list_id}", p.Todo).Methods(http.MethodGet, http.MethodPut, http.MethodDelete)
+	protected.HandleFunc("/todo-lists", p.Todo).Methods(http.MethodGet, http.MethodPost, http.MethodOptions)
+	protected.HandleFunc("/todo-lists/{list_id}", p.Todo).Methods(http.MethodGet, http.MethodPut, http.MethodDelete, http.MethodOptions)
 
-	protected.HandleFunc("/reminders", p.Reminder).Methods(http.MethodGet, http.MethodPost, http.MethodPut)
-	protected.HandleFunc("/reminders/{reminder_id}", p.Reminder).Methods(http.MethodGet, http.MethodDelete)
+	protected.HandleFunc("/reminders", p.Reminder).Methods(http.MethodGet, http.MethodPost, http.MethodPut, http.MethodOptions)
+	protected.HandleFunc("/reminders/{reminder_id}", p.Reminder).Methods(http.MethodGet, http.MethodDelete, http.MethodOptions)
 
-	protected.HandleFunc("/notifications", p.Reminder).Methods(http.MethodGet, http.MethodDelete)
-	protected.HandleFunc("/notifications/unread-count", p.Reminder).Methods(http.MethodGet)
-	protected.HandleFunc("/notifications/read-all", p.Reminder).Methods(http.MethodPost)
-	protected.HandleFunc("/notifications/{notification_id}/read", p.Reminder).Methods(http.MethodPost)
+	protected.HandleFunc("/notifications", p.Reminder).Methods(http.MethodGet, http.MethodDelete, http.MethodOptions)
+	protected.HandleFunc("/notifications/unread-count", p.Reminder).Methods(http.MethodGet, http.MethodOptions)
+	protected.HandleFunc("/notifications/read-all", p.Reminder).Methods(http.MethodPost, http.MethodOptions)
+	protected.HandleFunc("/notifications/{notification_id}/read", p.Reminder).Methods(http.MethodPost, http.MethodOptions)
 
 	return r
 }
